@@ -1,0 +1,9 @@
+message Request {
+  required string command = 1;
+  required string args = 2;
+}
+
+message Response {
+  required string status = 1;
+  required string message = 2;
+}
