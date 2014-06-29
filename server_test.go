@@ -5,7 +5,7 @@ import (
 	json "encoding/json"
 	"fmt"
 	"github.com/bmizerany/assert"
-	"github.com/paperlesspost/agency/tcpez"
+	"github.com/paperlesspost/tcpez"
 	math "math"
 	"testing"
 )
