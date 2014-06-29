@@ -1,22 +1,21 @@
-package tcpez_test
+package tcpez
 
 import (
 	proto "code.google.com/p/goprotobuf/proto"
 	json "encoding/json"
 	"fmt"
 	"github.com/bmizerany/assert"
-	"github.com/paperlesspost/tcpez"
 	math "math"
 	"testing"
 )
 
 type EchoHandler struct{}
 
-func (h *EchoHandler) Respond(req []byte, span *tcpez.Span) (response []byte, err error) {
+func (h *EchoHandler) Respond(req []byte, span *Span) (response []byte, err error) {
 	return req, nil
 }
 
-func (h *EchoHandler) Record(span *tcpez.Span) {
+func (h *EchoHandler) Record(span *Span) {
 }
 
 // Reference proto, json, and math imports to suppress error if they are not otherwise used.
@@ -77,11 +76,11 @@ func init() {
 
 func TestEchoServer(t *testing.T) {
 	addr := "127.0.0.1:2000"
-	l := tcpez.NewServer(addr, new(EchoHandler))
+	l := NewServer(addr, new(EchoHandler))
 	assert.T(t, l != nil)
 	go l.Start()
 	defer l.Close()
-	c := tcpez.NewClient([]string{addr}, 3, 3)
+	c := NewClient([]string{addr}, 3, 3)
 	assert.T(t, c != nil)
 	var resp []byte
 	var err error
@@ -94,11 +93,11 @@ func TestEchoServer(t *testing.T) {
 
 func TestEchoServerPipelined(t *testing.T) {
 	addr := "127.0.0.1:2000"
-	l := tcpez.NewServer(addr, new(EchoHandler))
+	l := NewServer(addr, new(EchoHandler))
 	assert.T(t, l != nil)
 	go l.Start()
 	defer l.Close()
-	c := tcpez.NewClient([]string{addr}, 3, 3)
+	c := NewClient([]string{addr}, 3, 3)
 	assert.T(t, c != nil)
 	pipe := c.Pipeline()
 	for i := 0; i < 10; i++ {
@@ -112,10 +111,10 @@ func TestEchoServerPipelined(t *testing.T) {
 
 func TestProtoServer(t *testing.T) {
 	addr := "127.0.0.1:2000"
-	protoFunc := tcpez.ProtoInitializerFunc(func() proto.Message {
+	protoFunc := ProtoInitializerFunc(func() proto.Message {
 		return new(Request)
 	})
-	handlerFunc := tcpez.ProtoHandlerFunc(func(req proto.Message, span *tcpez.Span) (res proto.Message) {
+	handlerFunc := ProtoHandlerFunc(func(req proto.Message, span *Span) (res proto.Message) {
 		r := req.(*Request)
 		message := fmt.Sprintf("Got command: %s args: %s", r.GetCommand(), r.GetArgs())
 		span.Increment("response")
@@ -124,12 +123,12 @@ func TestProtoServer(t *testing.T) {
 			Message: proto.String(message),
 		}
 	})
-	l := tcpez.NewProtoServer(addr, protoFunc, handlerFunc)
+	l := NewProtoServer(addr, protoFunc, handlerFunc)
 	assert.T(t, l != nil)
 	assert.Equal(t, addr, l.Address)
 	go l.Start()
 	defer l.Close()
-	c := tcpez.NewClient([]string{addr}, 3, 3)
+	c := NewClient([]string{addr}, 3, 3)
 	assert.T(t, c != nil)
 
 	iter := 500
