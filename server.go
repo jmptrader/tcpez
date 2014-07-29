@@ -64,7 +64,7 @@ type RequestHandler interface {
 // NewServer is the tcpez server intializer. It only requires two parameters,
 // an address to bind to (same format as net.ListenTCP) and a RequestHandler
 // which serves the requests.
-func NewServer(address string, handler RequestHandler) (s *Server) {
+func NewServer(address string, handler RequestHandler) (s *Server, err error) {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", address)
 	if err != nil {
 		glog.Fatal(err)
@@ -72,10 +72,10 @@ func NewServer(address string, handler RequestHandler) (s *Server) {
 
 	l, err := net.ListenTCP("tcp", tcpAddr)
 	if err != nil {
-		glog.Fatalf("[tcpez] FATAL: listen (%s) failed - %s", tcpAddr, err.Error())
+		return nil, err
 	}
 
-	return &Server{Address: address, conn: l, Handler: handler, Stats: new(DebugStatsRecorder), UUIDGenerator: DefaultUUIDGenerator}
+	return &Server{Address: address, conn: l, Handler: handler, Stats: new(DebugStatsRecorder), UUIDGenerator: DefaultUUIDGenerator}, nil
 }
 
 // Start starts the connection handling and request processing loop.

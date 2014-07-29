@@ -73,6 +73,6 @@ func (s *ProtoServer) Respond(req []byte, span *Span) (res []byte, err error) {
 // 	server := tcpez.NewProtoServer(":2222", protoFunc, handlerFunc)
 // 	go server.Start()
 //
-func NewProtoServer(address string, requestInitializer ProtoInitializerFunc, handler ProtoHandlerFunc) (s *Server) {
+func NewProtoServer(address string, requestInitializer ProtoInitializerFunc, handler ProtoHandlerFunc) (s *Server, err error) {
 	return NewServer(address, &ProtoServer{requestInitializer, handler})
 }
