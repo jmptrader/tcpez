@@ -1,4 +1,4 @@
-// Client is a basic implementation of a tcpez protocol Client with connection pooling and 
+// Client is a basic implementation of a tcpez protocol Client with connection pooling and
 // Pipelined requests. This will work out of the bat with any tcpez server, but any message
 // encoding should be handled at a higher level of abstraction
 package tcpez
@@ -22,10 +22,10 @@ type Client struct {
 }
 
 // Create a new Client to connect and load balance between a pool of addresses
-// given as a slice of strings in "host:port" format (the same format that net.Dial 
+// given as a slice of strings in "host:port" format (the same format that net.Dial
 // uses for the underlying connections. poolInit and poolMax set the initial connection
 // pool and the maxPool sizes. If you're not using this client across different
-// goroutines then these settings can be left at 1. 
+// goroutines then these settings can be left at 1.
 func NewClient(addresses []string, poolInit, poolMax int) (client *Client) {
 	pool, err := pool.New(poolInit, poolMax, func() (net.Conn, error) {
 		return net.Dial("tcp", addresses[rand.Intn(len(addresses))])
@@ -57,7 +57,7 @@ func (c *Client) Pipeline() *Pipeline {
 //
 //        c := tcpez.NewClient([]string{"localserver:2222"}, 3, 3)
 //        resp, err := c.SendRecv([]byte{"PING"})
-//        resp //=> []byte{"PONG"} 
+//        resp //=> []byte{"PONG"}
 //
 func (c *Client) SendRecv(req []byte) (res []byte, err error) {
 	conn, _, err := c.sendRequest(req)

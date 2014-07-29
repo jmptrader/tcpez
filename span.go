@@ -19,9 +19,9 @@ import (
 // A UUIDGenerator is a func that returns a unique id as a string
 type UUIDGenerator func() string
 
-// The DefaultUUDGenerator uses "github.com/satori/go.uuid"/V1 to
+// The DefaultUUIDGenerator uses "github.com/satori/go.uuid"/V1 to
 // generate RFC 4122 compatible uuids
-func DefaultUUDGenerator() string {
+func DefaultUUIDGenerator() string {
 	return uuid.NewV1().String()
 }
 
@@ -75,7 +75,7 @@ func NewSpan(id string) (s *Span) {
 	return s
 }
 
-// Start a subspan with name. names need to be unique per-Span as these 
+// Start a subspan with name. names need to be unique per-Span as these
 // are stored in a map of name->SubSpan. If you have multiple recouring calls
 // to a subroutine in a request, consider naming them with `method-newuuid`
 func (s *Span) Start(name string) {
@@ -124,7 +124,7 @@ func (s *Span) Increment(name string) int64 {
 	return s.Add(name, 1)
 }
 
-// Attr stores arbitrary metadata for the Span as a key/value map. 
+// Attr stores arbitrary metadata for the Span as a key/value map.
 func (s *Span) Attr(k, v string) {
 	s.Lock()
 	defer s.Unlock()
@@ -154,7 +154,7 @@ func (s *Span) MillisecondDuration(name string) float64 {
 	return s.SubSpan(name).MillisecondDuration()
 }
 
-// Record flushes the counters and SubSpan durations to the provider StatsRecorder. 
+// Record flushes the counters and SubSpan durations to the provider StatsRecorder.
 // By default this goes to /dev/null, but using the StatsdStatsdRecorder this can
 // be flushed to Statsd (or any other service that conforms to the StatsRecorder
 // interface)

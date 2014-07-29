@@ -17,10 +17,10 @@ import (
 type ProtoInitializerFunc func() proto.Message
 
 // ProtoHandlerFunc is the functional equivilent of the Respond() method for
-// the RequestHandler in the base tcpez.Server. Instead of taking the request and 
+// the RequestHandler in the base tcpez.Server. Instead of taking the request and
 // sending the response as []byte, it has the request as an initialized and parsed
 // protobuf and returns the response in the protocol buffer schema that represents
-// the response. This is then marshalled into a []byte before being sent back 
+// the response. This is then marshalled into a []byte before being sent back
 // to the client
 type ProtoHandlerFunc func(req proto.Message, span *Span) proto.Message
 
@@ -52,13 +52,13 @@ func (s *ProtoServer) Respond(req []byte, span *Span) (res []byte, err error) {
 
 // NewProtoServer intializes a tcpez.Server with a ProtoInitializerFunc and a ProtoHandlerFunc. A normal tcpez.Server
 // is returned (meaning you still have to call .Start() on it)
-// 
+//
 // 	protoFunc := tcpez.ProtoInitializerFunc(func() proto.Message {
-// 	        // we call this Request here, but its whatever schema YOUR 
+// 	        // we call this Request here, but its whatever schema YOUR
 // 	        // request is in
 // 		return new(Request)
 // 	})
-// 
+//
 // 	handlerFunc := tcpez.ProtoHandlerFunc(func(req proto.Message, span *tcpez.Span) (res proto.Message) {
 //              // initialize a new Response object which will be returned at the end of the handler
 // 		response := new(Response)

@@ -4,6 +4,7 @@ import (
 	"github.com/bmizerany/assert"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestSpanCreation(t *testing.T) {
@@ -14,6 +15,14 @@ func TestSpanCreation(t *testing.T) {
 	dur := span.Finish("test")
 	assert.Equal(t, 1, len(span.SubSpans))
 	assert.T(t, dur > 0)
+}
+
+func TestSubSpan(t *testing.T) {
+	n := time.Now()
+	span := NewSpan("")
+	assert.T(t, span != nil)
+	span.SubSpan("test").Finish(n)
+	assert.Equal(t, 1, len(span.SubSpans))
 }
 
 func TestMultipleSubSpans(t *testing.T) {

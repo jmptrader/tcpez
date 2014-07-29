@@ -2,7 +2,7 @@
 // and given a RequestHandler, it parses the tcpez protocol format and turns
 // it into individual request/responses. Each connection is handled on a
 // seperate goroutine and pipelined requests are first parsed then farmed
-// to seperate goroutines. Pipelined requests from the client are handled 
+// to seperate goroutines. Pipelined requests from the client are handled
 // seamlessly this way, each seperate request is passed to its own RequestHandler
 // with its own Span.
 package tcpez
@@ -44,8 +44,8 @@ type Server struct {
 // RequestHandler is the basic interface for setting up the request handling
 // logic of a tcpez server. The server handles all the request parsing and setup
 // as well as the response encoding. All you have to do to create a working server
-// is create an object that has a Respond() method that takes a byte slice (which 
-// is the request) and a Span (which allows you to track timings and meta data 
+// is create an object that has a Respond() method that takes a byte slice (which
+// is the request) and a Span (which allows you to track timings and meta data
 // through the request) and then it returns a byte slice which is the response.
 //
 //        type MyHandler struct
@@ -75,10 +75,10 @@ func NewServer(address string, handler RequestHandler) (s *Server) {
 		glog.Fatalf("[tcpez] FATAL: listen (%s) failed - %s", tcpAddr, err.Error())
 	}
 
-	return &Server{Address: address, conn: l, Handler: handler, Stats: new(DebugStatsRecorder), UUIDGenerator: DefaultUUDGenerator}
+	return &Server{Address: address, conn: l, Handler: handler, Stats: new(DebugStatsRecorder), UUIDGenerator: DefaultUUIDGenerator}
 }
 
-// Start starts the connection handling and request processing loop. 
+// Start starts the connection handling and request processing loop.
 // This is a blocking operation and can be started in a goroutine.
 func (s *Server) Start() {
 	glog.V(2).Infof("[tcpez] Listening on %s", s.conn.Addr().String())
