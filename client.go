@@ -8,7 +8,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/fatih/pool"
+        "gopkg.in/fatih/pool.v2"
 	"github.com/golang/glog"
 	"io"
 	"math/rand"
@@ -17,7 +17,7 @@ import (
 )
 
 type Client struct {
-	pool      *pool.Pool
+	pool      pool.Pool
 	Addresses []string
 }
 
@@ -27,7 +27,7 @@ type Client struct {
 // pool and the maxPool sizes. If you're not using this client across different
 // goroutines then these settings can be left at 1.
 func NewClient(addresses []string, poolInit, poolMax int) (client *Client) {
-	pool, err := pool.New(poolInit, poolMax, func() (net.Conn, error) {
+	pool, err := pool.NewChannelPool(poolInit, poolMax, func() (net.Conn, error) {
 		return net.Dial("tcp", addresses[rand.Intn(len(addresses))])
 	})
 	if err != nil {
@@ -61,7 +61,7 @@ func (c *Client) Pipeline() *Pipeline {
 //
 func (c *Client) SendRecv(req []byte) (res []byte, err error) {
 	conn, _, err := c.sendRequest(req)
-	defer c.pool.Put(conn)
+	defer conn.Close()
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +140,7 @@ func (p *Pipeline) Send(req []byte) error {
 // in order and stored in an slice and returned as responses
 func (p *Pipeline) Flush() (responses [][]byte, err error) {
 	conn, err := p.client.pool.Get()
-	defer p.client.pool.Put(conn)
+	defer conn.Close()
 	if err != nil {
 		return nil, err
 	}
