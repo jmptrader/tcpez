@@ -107,6 +107,22 @@ func (s *Span) Finish(name string) (duration int64) {
 	return sub.Duration()
 }
 
+// SubSpanWithDuration creates a new subspan with the duration expressed as a float64 of milliseconds.
+func (s *Span) SubSpanWithDuration(name string, msduration float64) {
+	s.Lock()
+	defer s.Unlock()
+	sub := s.SubSpans[name]
+	started := time.Now()
+	dur := time.Duration(msduration * 1000 * 1000)
+	finished := started.Add(dur)
+	if sub != nil {
+		sub.Started = started
+		sub.Finished = finished
+	} else {
+		s.SubSpans[name] = &SubSpan{Name: name, Started: started, Finished: finished}
+	}
+}
+
 // Add increments the counter at name by val. names for counters also are unique per-Span.
 func (s *Span) Add(name string, val int64) int64 {
 	s.Lock()

@@ -40,6 +40,14 @@ func TestMultipleSubSpans(t *testing.T) {
 	assert.T(t, dur == 0)
 }
 
+func TestSubSpanWithDuration(t *testing.T) {
+	span := NewSpan("")
+	assert.T(t, span != nil)
+	span.SubSpanWithDuration("test", 42.4)
+	assert.Equal(t, 1, len(span.SubSpans))
+	assert.Equal(t, 42.4, span.MillisecondDuration("test"))
+}
+
 func TestIncrement(t *testing.T) {
 	span := NewSpan("")
 	assert.T(t, span != nil)
