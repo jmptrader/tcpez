@@ -170,6 +170,28 @@ func (s *Span) MillisecondDuration(name string) float64 {
 	return s.SubSpan(name).MillisecondDuration()
 }
 
+type SpanJSON map[string]interface{}
+
+// MergeJSON imports values from a wellformed json that looks like
+// {"subspans": {}, "attrs": {}, "counters": {}}
+func (s *Span) MergeJSON(span string) (err error) {
+	var sj SpanJSON
+	err = json.Unmarshal([]byte(span), &sj)
+	if err != nil {
+		return err
+	}
+	for k, v := range sj["subspans"].(map[string]interface{}) {
+		s.SubSpanWithDuration(k, v.(float64))
+	}
+	for k, v := range sj["attrs"].(map[string]interface{}) {
+		s.Attr(k, v.(string))
+	}
+	for k, v := range sj["counters"].(map[string]interface{}) {
+		s.Add(k, int64(v.(float64)))
+	}
+	return nil
+}
+
 // Record flushes the counters and SubSpan durations to the provider StatsRecorder.
 // By default this goes to /dev/null, but using the StatsdStatsdRecorder this can
 // be flushed to Statsd (or any other service that conforms to the StatsRecorder

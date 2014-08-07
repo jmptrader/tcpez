@@ -48,6 +48,18 @@ func TestSubSpanWithDuration(t *testing.T) {
 	assert.Equal(t, 42.4, span.MillisecondDuration("test"))
 }
 
+func TestMergeJSON(t *testing.T) {
+	json := `
+        {"subspans":{"preloading_fonts":4013.933000001998,"setEvent":0.6599999978789128,"createCard":3.197000001819106,"renderEvent":232.6809999976831,"renderCanvas":97.5880000005418,"updateDisplayList":97.50500000154716,"paintDisplayList":12.435000000550644,"renderText":75.1589999999851,"toDataURL":43.588000000454485},"attrs":{},"counters":{"renderComplete":1},"id":"6eede8679ad2888e"}
+        `
+	span := NewSpan("")
+	assert.T(t, span != nil)
+	err := span.MergeJSON(json)
+	assert.T(t, err == nil)
+	assert.Equal(t, 9, len(span.SubSpans))
+	assert.Equal(t, 1, len(span.Counters))
+}
+
 func TestIncrement(t *testing.T) {
 	span := NewSpan("")
 	assert.T(t, span != nil)
