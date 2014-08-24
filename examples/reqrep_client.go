@@ -9,11 +9,12 @@ package main
 import (
 	reqrep "./reqrep"
 	proto "code.google.com/p/goprotobuf/proto"
-	"flag"
-	"github.com/golang/glog"
-	"github.com/paperlesspost/agency/tcpez"
+        "github.com/op/go-logging"
+	"github.com/paperlesspost/tcpez"
 	"time"
 )
+
+var log = logging.MustGetLogger("reqrep")
 
 // Client is just a tcpez.Client with its own methods
 type Client struct {
@@ -46,9 +47,6 @@ func (c *Client) Do(request *reqrep.Request) (response *reqrep.Response, err err
 }
 
 func main() {
-        // We need to call flag.Parse() to invoke the flags on the glog logger that's
-        // included in tcpez server
-	flag.Parse()
         // Initialize the client with a 1 connection pool, that's fine since were not doing anything conccurently
         // but in real production situations we'd want to tune this 
 	c := NewClient([]string{":2000"}, 1, 1)
@@ -56,7 +54,7 @@ func main() {
                 // Create a request struct and then send it
 		response, err := c.Do(&reqrep.Request{Command: proto.String("SUCCEED"), Args: proto.String("nil")})
 		if err == nil {
-			glog.Infof("[reqrep] %s %s", response.GetStatus(), response.GetMessage())
+			log.Info("[reqrep] %s %s", response.GetStatus(), response.GetMessage())
 		}
 		time.Sleep(1000)
 	}

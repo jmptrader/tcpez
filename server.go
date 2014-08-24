@@ -11,11 +11,19 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"github.com/golang/glog"
+	"github.com/op/go-logging"
 	"io"
 	"net"
 	"sync"
 )
+
+var log = logging.MustGetLogger("tcpez")
+var LogFormat = logging.MustStringFormatter("%{level} %{time:2006-01-02T15:04:05Z07:00} [%{module}] %{message}")
+
+func init() {
+	logging.SetLevel(logging.INFO, "tcpez")
+	logging.SetFormatter(LogFormat)
+}
 
 // Server is the base struct that wraps the tcp listener and allows
 // for setting the RequestHandler that takes each request and returns
@@ -67,9 +75,8 @@ type RequestHandler interface {
 func NewServer(address string, handler RequestHandler) (s *Server, err error) {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", address)
 	if err != nil {
-		glog.Fatal(err)
+		return nil, err
 	}
-
 	l, err := net.ListenTCP("tcp", tcpAddr)
 	if err != nil {
 		return nil, err
@@ -81,20 +88,19 @@ func NewServer(address string, handler RequestHandler) (s *Server, err error) {
 // Start starts the connection handling and request processing loop.
 // This is a blocking operation and can be started in a goroutine.
 func (s *Server) Start() {
-	glog.V(2).Infof("[tcpez] Listening on %s", s.conn.Addr().String())
+	log.Debug("Listening on %s", s.conn.Addr().String())
 	for {
 		if s.isClosed == true {
 			break
 		}
 		clientConn, err := s.conn.Accept()
 		if err != nil {
-			glog.Error(err)
+			log.Warning(err.Error())
 			break
 		}
 		go s.handle(clientConn)
 	}
-
-	glog.V(2).Infof("[tcpez] Closing %s", s.conn.Addr().String())
+	log.Debug("Closing %s", s.conn.Addr().String())
 }
 
 // Close closes the server listener to any more connections
@@ -108,7 +114,7 @@ func (s *Server) Close() (err error) {
 }
 
 func (s *Server) handle(clientConn net.Conn) {
-	glog.V(2).Infof("[tcpez] New client(%s)", clientConn.RemoteAddr())
+	log.Debug("[tcpez] New client(%s)", clientConn.RemoteAddr())
 	for {
 		header, response, err := s.readHeaderAndHandleRequest(clientConn)
 		if err != nil {
@@ -116,13 +122,13 @@ func (s *Server) handle(clientConn net.Conn) {
 				// EOF the client has disconnected
 				break
 			}
-			glog.Error(err)
+			log.Error(err.Error())
 			s.Stats.Increment("operation.failure")
 			return
 		}
 		err = s.sendResponse(clientConn, header, response)
 		if err != nil {
-			glog.Error(err)
+			log.Error(err.Error())
 			s.Stats.Increment("operation.failure")
 			return
 		}
@@ -198,7 +204,7 @@ func (s *Server) parseRequest(buf io.Reader, size int32) (request []byte, err er
 	}
 	request = make([]byte, size)
 	_, err = io.ReadFull(buf, request)
-	glog.V(3).Infof("Server Request: %s", request)
+	log.Debug("Server Request: %s", request)
 	if err != nil {
 		return nil, err
 	}
@@ -214,7 +220,7 @@ func (s *Server) handleRequest(request []byte, multi bool) (response []byte, err
 	span.Start("duration")
 	response, err = s.Handler.Respond(request, span)
 	span.Finish("duration")
-	glog.Infof("[tcpez] %s", span.JSON())
+	log.Info("%s", span.JSON())
 	span.Record()
 	return
 }

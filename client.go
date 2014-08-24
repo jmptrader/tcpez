@@ -8,7 +8,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/golang/glog"
 	"gopkg.in/fatih/pool.v2"
 	"io"
 	"math/rand"
@@ -26,14 +25,15 @@ type Client struct {
 // uses for the underlying connections. poolInit and poolMax set the initial connection
 // pool and the maxPool sizes. If you're not using this client across different
 // goroutines then these settings can be left at 1.
-func NewClient(addresses []string, poolInit, poolMax int) (client *Client) {
+func NewClient(addresses []string, poolInit, poolMax int) (client *Client, err error) {
 	pool, err := pool.NewChannelPool(poolInit, poolMax, func() (net.Conn, error) {
 		return net.Dial("tcp", addresses[rand.Intn(len(addresses))])
 	})
 	if err != nil {
-		glog.Fatal(err)
+		log.Error(err.Error())
+		return nil, err
 	}
-	return &Client{pool: pool, Addresses: addresses}
+	return &Client{pool: pool, Addresses: addresses}, nil
 }
 
 // Pipeline returns a new pipeline for sending requests. These requests are kept in
@@ -69,7 +69,7 @@ func (c *Client) SendRecv(req []byte) (res []byte, err error) {
 }
 
 func (c *Client) sendRequest(data []byte) (conn net.Conn, length int, err error) {
-	glog.V(3).Infof("Client Request: %s", data)
+	log.Debug("Client Request: %s", data)
 	conn, err = c.pool.Get()
 	length, err = writeDataWithLength(data, conn)
 	return conn, length, err
@@ -80,7 +80,7 @@ func (c *Client) readResponse(conn net.Conn) (response []byte, err error) {
 	if err != nil {
 		return nil, err
 	}
-	glog.V(3).Infof("Server Response: %s", response)
+	log.Debug("Server Response: %s", response)
 	return
 }
 

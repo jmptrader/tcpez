@@ -1,7 +1,6 @@
 package tcpez
 
 import (
-	"github.com/golang/glog"
 	"time"
 )
 
@@ -16,7 +15,7 @@ type StatsRecorder interface {
 type DebugStatsRecorder struct{}
 
 func (s *DebugStatsRecorder) log(stat string, amount int64) {
-	glog.V(2).Infof("debug stats %s %v", stat, amount)
+	log.Debug("stats %s %v", stat, amount)
 }
 
 func (s *DebugStatsRecorder) Timer(stat string, amount int64) {

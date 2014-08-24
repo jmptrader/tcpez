@@ -3,7 +3,7 @@
 // is that every request has a Span object associated with it which allows
 // for registering subspans (used for timing subroutines), attributes (arbitrary
 // metadata) and counts (incrementers ala StatsD). At the end of a request,
-// this span is turned into JSON and logged to glog as well as the timings
+// this span is turned into JSON and logged to logger as well as the timings
 // and counters sent through the supplied StatsRecorder.
 package tcpez
 

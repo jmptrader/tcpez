@@ -5,6 +5,7 @@ import (
 	json "encoding/json"
 	"fmt"
 	"github.com/bmizerany/assert"
+	"github.com/op/go-logging"
 	math "math"
 	"testing"
 )
@@ -72,6 +73,7 @@ func (m *Response) GetMessage() string {
 }
 
 func init() {
+	logging.SetLevel(logging.ERROR, "tcpez")
 }
 
 func TestEchoServer(t *testing.T) {
@@ -80,10 +82,9 @@ func TestEchoServer(t *testing.T) {
 	assert.T(t, l != nil)
 	go l.Start()
 	defer l.Close()
-	c := NewClient([]string{addr}, 3, 3)
+	c, err := NewClient([]string{addr}, 3, 3)
 	assert.T(t, c != nil)
 	var resp []byte
-	var err error
 	for i := 0; i < 1000; i++ {
 		resp, err = c.SendRecv([]byte("PING"))
 		assert.T(t, err == nil)
@@ -97,7 +98,7 @@ func TestEchoServerPipelined(t *testing.T) {
 	assert.T(t, l != nil)
 	go l.Start()
 	defer l.Close()
-	c := NewClient([]string{addr}, 3, 3)
+	c, _ := NewClient([]string{addr}, 3, 3)
 	assert.T(t, c != nil)
 	pipe := c.Pipeline()
 	for i := 0; i < 10; i++ {
@@ -128,7 +129,7 @@ func TestProtoServer(t *testing.T) {
 	assert.Equal(t, addr, l.Address)
 	go l.Start()
 	defer l.Close()
-	c := NewClient([]string{addr}, 3, 3)
+	c, _ := NewClient([]string{addr}, 3, 3)
 	assert.T(t, c != nil)
 
 	iter := 500

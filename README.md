@@ -85,7 +85,7 @@ Response: `|-2|5|PONG1|5|PONG2|`
 
 ## Logging/Stats
 
-tcpez uses [glog](https://github.com/golang/glog) for leveled logging internally. You *must* call `flag.Parse()` in your application's main function to enable the logging and its command line options. tcpez uses a simple implementation of what we call Span's that are used to track metadata and subroutine durations during a request. Every request has a unique span (with a unique id) that is initialized and passed through the request handler. At the end of the request, any metadata and timings added to this span are logged as JSON and flushed to a `StatsRecorder`. There is an optional `StatsdStatsRecorder` that will flush this data to an instance of Statsd for graphing, etc.
+tcpez uses the [go-logging](https://github.com/op/go-logging) for leveled logging internally. It exposes a tcpez.LogFormat that you can use in your application as well. tcpez uses a simple implementation of what we call Span's that are used to track metadata and subroutine durations during a request. Every request has a unique span (with a unique id) that is initialized and passed through the request handler. At the end of the request, any metadata and timings added to this span are logged as JSON and flushed to a `StatsRecorder`. There is an optional `StatsdStatsRecorder` that will flush this data to an instance of Statsd for graphing, etc.
 
 ## About
 
