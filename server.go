@@ -1,6 +1,6 @@
 // Server is the base tcpez server. It sets up a tcp listener on an address,
 // and given a RequestHandler, it parses the tcpez protocol format and turns
-// it into individual request/responses. Each connection is handled on a
+// it into individual request/responses. Each Connection is handled on a
 // seperate goroutine and pipelined requests are first parsed then farmed
 // to seperate goroutines. Pipelined requests from the client are handled
 // seamlessly this way, each seperate request is passed to its own RequestHandler
@@ -15,6 +15,7 @@ import (
 	"io"
 	"net"
 	"sync"
+	"time"
 )
 
 var log = logging.MustGetLogger("tcpez")
@@ -45,7 +46,8 @@ type Server struct {
 	// complex (a vector-clock style UUID generator for example)
 	UUIDGenerator UUIDGenerator
 
-	conn     *net.TCPListener
+	// The underlying TCP listener, access if you need to set timeouts, etc
+	Conn     *net.TCPListener
 	isClosed bool
 }
 
@@ -82,44 +84,46 @@ func NewServer(address string, handler RequestHandler) (s *Server, err error) {
 		return nil, err
 	}
 
-	return &Server{Address: address, conn: l, Handler: handler, Stats: new(DebugStatsRecorder), UUIDGenerator: DefaultUUIDGenerator}, nil
+	return &Server{Address: address, Conn: l, Handler: handler, Stats: new(DebugStatsRecorder), UUIDGenerator: DefaultUUIDGenerator}, nil
 }
 
-// Start starts the connection handling and request processing loop.
+// Start starts the Connection handling and request processing loop.
 // This is a blocking operation and can be started in a goroutine.
 func (s *Server) Start() {
-	log.Debug("Listening on %s", s.conn.Addr().String())
+	log.Debug("Listening on %s", s.Conn.Addr().String())
 	for {
 		if s.isClosed == true {
 			break
 		}
-		clientConn, err := s.conn.Accept()
+		clientConn, err := s.Conn.Accept()
 		if err != nil {
 			log.Warning(err.Error())
 			break
 		}
 		go s.handle(clientConn)
 	}
-	log.Debug("Closing %s", s.conn.Addr().String())
+	log.Debug("Closing %s", s.Conn.Addr().String())
 }
 
-// Close closes the server listener to any more connections
+// Close closes the server listener to any more Connections
 func (s *Server) Close() (err error) {
 	if s.isClosed == false {
-		err = s.conn.Close()
+		err = s.Conn.Close()
 		s.isClosed = true
 		return
 	}
-	return errors.New("Closing already closed connection")
+	return errors.New("Closing already closed Connection")
 }
 
 func (s *Server) handle(clientConn net.Conn) {
 	log.Debug("[tcpez] New client(%s)", clientConn.RemoteAddr())
 	for {
+		// Timeout the connection after 5 mins
+		clientConn.SetReadDeadline(time.Now().Add(5 * time.Minute))
 		header, response, err := s.readHeaderAndHandleRequest(clientConn)
 		if err != nil {
-			if err == io.EOF {
-				// EOF the client has disconnected
+			if err == io.EOF || err.(net.Error).Timeout() == true {
+				// EOF the client has disConnected
 				break
 			}
 			log.Error(err.Error())
