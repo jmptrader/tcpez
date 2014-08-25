@@ -18,7 +18,7 @@ import (
 )
 
 var log = logging.MustGetLogger("tcpez")
-var LogFormat = logging.MustStringFormatter("%{level} %{time:2006-01-02T15:04:05Z07:00} [%{module}] %{message}")
+var LogFormat = logging.MustStringFormatter("%{time:2006-01-02T15:04:05.999999999Z07:00} %{level} [%{module}] %{message}")
 
 func init() {
 	logging.SetLevel(logging.INFO, "tcpez")
