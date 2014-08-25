@@ -77,8 +77,11 @@ func init() {
 }
 
 func TestEchoServer(t *testing.T) {
-	addr := "127.0.0.1:2000"
-	l, _ := NewServer(addr, new(EchoHandler))
+	addr := "127.0.0.1:2001"
+	l, err := NewServer(addr, new(EchoHandler))
+	if err != nil {
+		log.Error(err.Error())
+	}
 	assert.T(t, l != nil)
 	go l.Start()
 	defer l.Close()
@@ -93,7 +96,7 @@ func TestEchoServer(t *testing.T) {
 }
 
 func TestEchoServerPipelined(t *testing.T) {
-	addr := "127.0.0.1:2000"
+	addr := "127.0.0.1:2001"
 	l, _ := NewServer(addr, new(EchoHandler))
 	assert.T(t, l != nil)
 	go l.Start()
@@ -111,7 +114,7 @@ func TestEchoServerPipelined(t *testing.T) {
 }
 
 func TestProtoServer(t *testing.T) {
-	addr := "127.0.0.1:2000"
+	addr := "127.0.0.1:2001"
 	protoFunc := ProtoInitializerFunc(func() proto.Message {
 		return new(Request)
 	})

@@ -12,7 +12,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/satori/go.uuid"
+	"runtime"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -242,4 +244,26 @@ func (s *Span) String() string {
 		fmt.Fprintf(b, "%s=%fms ", k, v.MillisecondDuration())
 	}
 	return b.String()
+}
+
+// CollectMemStats populates the span with a number of memory statistics from
+// runtime.MemStats. Call this before logging your span for info about your
+// applications memory usage
+func (s *Span) CollectMemStats() {
+	s.Start("mem.duration")
+	defer s.Finish("mem.duration")
+	m := runtime.MemStats{}
+	runtime.ReadMemStats(&m)
+	r := new(syscall.Rusage)
+	syscall.Getrusage(syscall.RUSAGE_SELF, r)
+	s.Add("mem.alloc", int64(m.Alloc/1024))
+	s.Add("mem.total_alloc", int64(m.TotalAlloc/1024))
+	s.Add("mem.sys", int64(m.Sys/1024))
+	s.Add("mem.heap_sys", int64(m.HeapSys/1024))
+	s.Add("mem.heap_inuse", int64(m.HeapInuse/1024))
+	s.Add("mem.heap_idle", int64(m.HeapIdle/1024))
+	s.Add("mem.heap_released", int64(m.HeapReleased/1024))
+	s.Add("mem.heap_objects", int64(m.HeapObjects/1024))
+	s.Add("mem.num_gc", int64(m.NumGC/1024))
+	s.Add("mem.max_rss", r.Maxrss)
 }
