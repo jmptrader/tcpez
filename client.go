@@ -8,16 +8,17 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"gopkg.in/fatih/pool.v2"
 	"io"
-	"math/rand"
 	"net"
 	"sync"
+	"syscall"
+	"time"
 )
 
 type Client struct {
-	pool      pool.Pool
+	pool      *ConnectionPool
 	Addresses []string
+	Retries   int
 }
 
 // Create a new Client to connect and load balance between a pool of addresses
@@ -25,15 +26,13 @@ type Client struct {
 // uses for the underlying connections. poolInit and poolMax set the initial connection
 // pool and the maxPool sizes. If you're not using this client across different
 // goroutines then these settings can be left at 1.
-func NewClient(addresses []string, poolInit, poolMax int) (client *Client, err error) {
-	pool, err := pool.NewChannelPool(poolInit, poolMax, func() (net.Conn, error) {
-		return net.Dial("tcp", addresses[rand.Intn(len(addresses))])
-	})
+func NewClient(addresses []string, poolInit int, timeout time.Duration) (client *Client, err error) {
+	pool, err := NewConnectionPool(addresses, poolInit, timeout)
 	if err != nil {
 		log.Error(err.Error())
 		return nil, err
 	}
-	return &Client{pool: pool, Addresses: addresses}, nil
+	return &Client{pool: pool, Addresses: addresses, Retries: 3}, nil
 }
 
 // Pipeline returns a new pipeline for sending requests. These requests are kept in
@@ -60,19 +59,46 @@ func (c *Client) Pipeline() *Pipeline {
 //        resp //=> []byte{"PONG"}
 //
 func (c *Client) SendRecv(req []byte) (res []byte, err error) {
-	conn, _, err := c.sendRequest(req)
-	defer conn.Close()
-	if err != nil {
-		return nil, err
+	for tries := 1; tries <= c.Retries; tries++ {
+		conn, err := c.pool.Take()
+		if err != nil && tries < c.Retries {
+			continue
+		}
+		_, err = c.sendRequest(conn, req)
+		if err != nil {
+			if retryableError(err) && tries < c.Retries {
+				continue
+			} else {
+				return nil, err
+			}
+		}
+		res, err = c.readResponse(conn)
+		if err != nil {
+			if retryableError(err) && tries < c.Retries {
+				continue
+			} else {
+				return nil, err
+			}
+		}
+		// if theres no error, return it to the pool
+		c.pool.Return(conn)
+		return res, err
 	}
-	return c.readResponse(conn)
+	return
 }
 
-func (c *Client) sendRequest(data []byte) (conn net.Conn, length int, err error) {
+func retryableError(err error) bool {
+	err = err.(*net.OpError).Err
+	return err == syscall.EPIPE || err == syscall.ECONNREFUSED || err == syscall.ECONNRESET
+}
+
+func (c *Client) sendRequest(conn net.Conn, data []byte) (length int, err error) {
 	log.Debug("Client Request: %s", data)
-	conn, err = c.pool.Get()
+	if err != nil {
+		return length, err
+	}
 	length, err = writeDataWithLength(data, conn)
-	return conn, length, err
+	return length, err
 }
 
 func (c *Client) readResponse(conn net.Conn) (response []byte, err error) {
@@ -139,8 +165,7 @@ func (p *Pipeline) Send(req []byte) error {
 // blocks waiting for all the responses from the server. These requests are returned
 // in order and stored in an slice and returned as responses
 func (p *Pipeline) Flush() (responses [][]byte, err error) {
-	conn, err := p.client.pool.Get()
-	defer conn.Close()
+	conn, err := p.client.pool.Take()
 	if err != nil {
 		return nil, err
 	}
@@ -163,5 +188,6 @@ func (p *Pipeline) Flush() (responses [][]byte, err error) {
 	for i := int32(0); i < -responseCount; i++ {
 		responses[i], err = readDataWithLength(conn)
 	}
+	p.client.pool.Return(conn)
 	return
 }

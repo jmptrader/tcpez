@@ -47,8 +47,11 @@ type Server struct {
 	UUIDGenerator UUIDGenerator
 
 	// The underlying TCP listener, access if you need to set timeouts, etc
-	Conn     *net.TCPListener
-	isClosed bool
+	Conn *net.TCPListener
+	// The number of open tcpez connections
+	NumConnections int
+	isClosed       bool
+	closer         chan int
 }
 
 // RequestHandler is the basic interface for setting up the request handling
@@ -84,7 +87,7 @@ func NewServer(address string, handler RequestHandler) (s *Server, err error) {
 		return nil, err
 	}
 
-	return &Server{Address: address, Conn: l, Handler: handler, Stats: new(DebugStatsRecorder), UUIDGenerator: DefaultUUIDGenerator}, nil
+	return &Server{Address: address, Conn: l, Handler: handler, Stats: new(DebugStatsRecorder), UUIDGenerator: DefaultUUIDGenerator, closer: make(chan int)}, nil
 }
 
 // Start starts the Connection handling and request processing loop.
@@ -100,6 +103,8 @@ func (s *Server) Start() {
 			log.Warning(err.Error())
 			break
 		}
+		s.NumConnections++
+		go s.clientCloser(clientConn)
 		go s.handle(clientConn)
 	}
 	log.Debug("Closing %s", s.Conn.Addr().String())
@@ -110,6 +115,9 @@ func (s *Server) Close() (err error) {
 	if s.isClosed == false {
 		err = s.Conn.Close()
 		s.isClosed = true
+		for i := 0; i < s.NumConnections; i++ {
+			s.closer <- 1
+		}
 		return
 	}
 	return errors.New("Closing already closed Connection")
@@ -122,8 +130,8 @@ func (s *Server) handle(clientConn net.Conn) {
 		clientConn.SetReadDeadline(time.Now().Add(5 * time.Minute))
 		header, response, err := s.readHeaderAndHandleRequest(clientConn)
 		if err != nil {
-			if err == io.EOF || err.(net.Error).Timeout() == true {
-				// EOF the client has disConnected
+			if closableError(err) {
+				// EOF the client has disconnected
 				break
 			}
 			log.Error(err.Error())
@@ -132,12 +140,28 @@ func (s *Server) handle(clientConn net.Conn) {
 		}
 		err = s.sendResponse(clientConn, header, response)
 		if err != nil {
+			if closableError(err) {
+				// EOF the client has disconnected
+				break
+			}
 			log.Error(err.Error())
 			s.Stats.Increment("operation.failure")
 			return
 		}
 		s.Stats.Increment("operation.success")
 	}
+	s.NumConnections--
+}
+
+func closableError(err error) bool {
+	return err == io.EOF || err == io.ErrClosedPipe || err.(net.Error).Timeout() == true
+}
+
+// clientCloser closes client connections when the server is closed
+func (s *Server) clientCloser(clientConn net.Conn) {
+	<-s.closer
+	log.Debug("Closing the client connection %v", clientConn)
+	clientConn.Close()
 }
 
 func (s *Server) readHeaderAndHandleRequest(buf io.Reader) (header int32, response []byte, err error) {

@@ -8,6 +8,7 @@ import (
 	"github.com/op/go-logging"
 	math "math"
 	"testing"
+	"time"
 )
 
 type EchoHandler struct{}
@@ -85,10 +86,10 @@ func TestEchoServer(t *testing.T) {
 	assert.T(t, l != nil)
 	go l.Start()
 	defer l.Close()
-	c, err := NewClient([]string{addr}, 3, 3)
+	c, err := NewClient([]string{addr}, 3, 3*time.Second)
 	assert.T(t, c != nil)
 	var resp []byte
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < 100; i++ {
 		resp, err = c.SendRecv([]byte("PING"))
 		assert.T(t, err == nil)
 		assert.Equal(t, []byte("PING"), resp)
@@ -101,7 +102,7 @@ func TestEchoServerPipelined(t *testing.T) {
 	assert.T(t, l != nil)
 	go l.Start()
 	defer l.Close()
-	c, _ := NewClient([]string{addr}, 3, 3)
+	c, _ := NewClient([]string{addr}, 3, 3*time.Second)
 	assert.T(t, c != nil)
 	pipe := c.Pipeline()
 	for i := 0; i < 10; i++ {
@@ -132,10 +133,10 @@ func TestProtoServer(t *testing.T) {
 	assert.Equal(t, addr, l.Address)
 	go l.Start()
 	defer l.Close()
-	c, _ := NewClient([]string{addr}, 3, 3)
+	c, _ := NewClient([]string{addr}, 3, 3*time.Second)
 	assert.T(t, c != nil)
 
-	iter := 500
+	iter := 100
 
 	for i := 0; i < iter; i++ {
 		var req []byte
@@ -154,5 +155,42 @@ func TestProtoServer(t *testing.T) {
 		err = proto.Unmarshal(resp, response)
 		assert.T(t, err == nil)
 		assert.Equal(t, "OK", response.GetStatus())
+	}
+}
+
+func TestEchoServerReconnect(t *testing.T) {
+	addr := "127.0.0.1:2001"
+	l, err := NewServer(addr, new(EchoHandler))
+	if err != nil {
+		log.Error(err.Error())
+	}
+	assert.T(t, l != nil)
+	go l.Start()
+	c, err := NewClient([]string{addr}, 3, 3*time.Second)
+	assert.T(t, c != nil)
+	var resp []byte
+	for i := 0; i < 10; i++ {
+		resp, err = c.SendRecv([]byte("PING"))
+		assert.T(t, err == nil)
+		assert.Equal(t, []byte("PING"), resp)
+	}
+	l.Close()
+	time.Sleep(1 * time.Second)
+	resp, err = c.SendRecv([]byte("PING"))
+	assert.T(t, resp == nil)
+	assert.T(t, err != nil)
+	l, err = NewServer(addr, new(EchoHandler))
+	if err != nil {
+		log.Error(err.Error())
+	}
+	assert.T(t, l != nil)
+	go l.Start()
+	for i := 0; i < 10; i++ {
+		resp, err = c.SendRecv([]byte("PING"))
+		if err != nil {
+			log.Error(err.Error())
+		}
+		assert.T(t, err == nil)
+		assert.Equal(t, []byte("PING"), resp)
 	}
 }
