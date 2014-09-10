@@ -64,6 +64,8 @@ func (c *Client) SendRecv(req []byte) (res []byte, err error) {
 		if err != nil && tries < c.Retries {
 			continue
 		}
+		// Timeout the connection after 10 seconds
+		conn.SetDeadline(time.Now().Add(10 * time.Second))
 		_, err = c.sendRequest(conn, req)
 		if err != nil {
 			if retryableError(err) && tries < c.Retries {

@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// StatsdStatsRecorder holds the data for a statsd external instance 
+// StatsdStatsRecorder holds the data for a statsd external instance
 // that data is flushed to periodically. It fuffils the StatsRecorder
 // interface so it can be passed to Tcpez Servers
 type StatsdStatsRecorder struct {
@@ -33,15 +33,15 @@ func NewStatsdStatsRecorder(address, namespace string) *StatsdStatsRecorder {
 
 	stats := &StatsdStatsRecorder{
 		address: address,
-                // arbitrary buffer size just to support as much
-                // non blocking as possible
+		// arbitrary buffer size just to support as much
+		// non blocking as possible
 		counter: make(chan *StatsdStat, 100),
 		timer:   make(chan *StatsdStat, 100),
 		gauge:   make(chan *StatsdStat, 100),
 		client:  client,
 	}
 
-        go stats.Start()
+	go stats.Start()
 	return stats
 }
 
@@ -89,4 +89,3 @@ func (stats *StatsdStatsRecorder) Start() {
 		}
 	}
 }
-
