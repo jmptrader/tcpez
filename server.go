@@ -247,6 +247,7 @@ func (s *Server) handleRequest(request []byte, multi bool) (response []byte, err
 	}
 	span.Stats = s.Stats
 	span.Start("duration")
+	span.Add("num_connections", int64(s.NumConnections))
 	response, err = s.Handler.Respond(request, span)
 	span.Finish("duration")
 	log.Info("%s", span.JSON())
