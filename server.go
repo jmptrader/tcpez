@@ -150,6 +150,7 @@ func (s *Server) handle(clientConn net.Conn) {
 		}
 		s.Stats.Increment("operation.success")
 	}
+	clientConn.Close()
 	s.NumConnections--
 }
 
