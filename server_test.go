@@ -3,10 +3,13 @@ package tcpez
 import (
 	proto "code.google.com/p/goprotobuf/proto"
 	json "encoding/json"
+	"errors"
 	"fmt"
 	"github.com/bmizerany/assert"
 	"github.com/op/go-logging"
 	math "math"
+	"net"
+	"syscall"
 	"testing"
 	"time"
 )
@@ -193,4 +196,9 @@ func TestEchoServerReconnect(t *testing.T) {
 		assert.T(t, err == nil)
 		assert.Equal(t, []byte("PING"), resp)
 	}
+}
+
+func TestBreakingRetryableError(t *testing.T) {
+	assert.T(t, retryableError(errors.New("Sup")) == false)
+	assert.T(t, retryableError(&net.OpError{Err: syscall.EPIPE}) == true)
 }
