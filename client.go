@@ -90,8 +90,13 @@ func (c *Client) SendRecv(req []byte) (res []byte, err error) {
 }
 
 func retryableError(err error) bool {
-	err = err.(*net.OpError).Err
-	return err == syscall.EPIPE || err == syscall.ECONNREFUSED || err == syscall.ECONNRESET
+	// some crazy magic to get to the inner realm of the error and check
+	// what type of error this is. Is this really necessary?
+	if err, ok := err.(*net.OpError); ok == true {
+		e := err.Err
+		return e == syscall.EPIPE || e == syscall.ECONNREFUSED || e == syscall.ECONNRESET
+	}
+	return false
 }
 
 func (c *Client) sendRequest(conn net.Conn, data []byte) (length int, err error) {
