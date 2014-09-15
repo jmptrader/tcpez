@@ -100,7 +100,6 @@ func retryableError(err error) bool {
 }
 
 func (c *Client) sendRequest(conn net.Conn, data []byte) (length int, err error) {
-	log.Debug("Client Request: %s", data)
 	if err != nil {
 		return length, err
 	}
@@ -113,7 +112,6 @@ func (c *Client) readResponse(conn net.Conn) (response []byte, err error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Debug("Server Response: %s", response)
 	return
 }
 

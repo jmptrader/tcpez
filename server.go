@@ -233,7 +233,6 @@ func (s *Server) parseRequest(buf io.Reader, size int32) (request []byte, err er
 	}
 	request = make([]byte, size)
 	_, err = io.ReadFull(buf, request)
-	log.Debug("Server Request: %s", request)
 	if err != nil {
 		return nil, err
 	}
