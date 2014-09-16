@@ -182,6 +182,7 @@ func TestEchoServerReconnect(t *testing.T) {
 	resp, err = c.SendRecv([]byte("PING"))
 	assert.T(t, resp == nil)
 	assert.T(t, err != nil)
+	assert.Equal(t, 0, l.NumConnections())
 	l, err = NewServer(addr, new(EchoHandler))
 	if err != nil {
 		log.Error(err.Error())
