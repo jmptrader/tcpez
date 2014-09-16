@@ -96,6 +96,9 @@ func retryableError(err error) bool {
 		e := err.Err
 		return e == syscall.EPIPE || e == syscall.ECONNREFUSED || e == syscall.ECONNRESET
 	}
+	if err == io.EOF {
+		return true
+	}
 	return false
 }
 

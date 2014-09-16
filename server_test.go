@@ -191,7 +191,7 @@ func TestEchoServerReconnect(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		resp, err = c.SendRecv([]byte("PING"))
 		if err != nil {
-			log.Error(err.Error())
+			log.Error("Iter: %d %s", i, err.Error())
 		}
 		assert.T(t, err == nil)
 		assert.Equal(t, []byte("PING"), resp)
