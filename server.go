@@ -160,7 +160,10 @@ func (s *Server) handle(clientConn net.Conn, id int) {
 }
 
 func closableError(err error) bool {
-	return err == io.EOF || err == io.ErrClosedPipe || err.(net.Error).Timeout() == true
+	if err, ok := err.(net.Error); ok == true {
+		return err.Timeout() == true
+	}
+	return err == io.EOF || err == io.ErrClosedPipe
 }
 
 func (s *Server) readHeaderAndHandleRequest(buf io.Reader) (header int32, response []byte, err error) {
