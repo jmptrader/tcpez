@@ -155,6 +155,7 @@ func (s *Server) handle(clientConn net.Conn, id int) {
 		}
 		s.Stats.Increment("operation.success")
 	}
+	log.Debug("Closing connection %v", clientConn)
 	clientConn.Close()
 	delete(s.clientConns, id)
 }
@@ -163,7 +164,7 @@ func closableError(err error) bool {
 	if err, ok := err.(net.Error); ok == true {
 		return err.Timeout() == true
 	}
-	return err == io.EOF || err == io.ErrClosedPipe
+	return err == io.EOF || err == io.ErrClosedPipe || err == io.ErrUnexpectedEOF
 }
 
 func (s *Server) readHeaderAndHandleRequest(buf io.Reader) (header int32, response []byte, err error) {
