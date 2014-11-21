@@ -94,7 +94,7 @@ func retryableError(err error) bool {
 	// what type of error this is. Is this really necessary?
 	if err, ok := err.(*net.OpError); ok == true {
 		e := err.Err
-		return e == syscall.EPIPE || e == syscall.ECONNREFUSED || e == syscall.ECONNRESET
+		return e == syscall.EPIPE || e == syscall.ECONNREFUSED || e == syscall.ECONNRESET || e == syscall.EHOSTUNREACH
 	}
 	if err == io.EOF {
 		return true
