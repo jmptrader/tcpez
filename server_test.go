@@ -125,14 +125,13 @@ func TestProtoServer(t *testing.T) {
 	responseFunc := ProtoInitializerFunc(func() proto.Message {
 		return new(Response)
 	})
-	handlerFunc := ProtoHandlerFunc(func(req proto.Message, res proto.Message, span *Span) proto.Message {
+	handlerFunc := ProtoHandlerFunc(func(req proto.Message, res proto.Message, span *Span) {
 		r := req.(*Request)
 		message := fmt.Sprintf("Got command: %s args: %s", r.GetCommand(), r.GetArgs())
 		span.Increment("response")
 		response := res.(*Response)
 		response.Status = proto.String("OK")
 		response.Message = proto.String(message)
-		return res
 	})
 	l, _ := NewProtoServer(addr, requestFunc, responseFunc, handlerFunc)
 	assert.T(t, l != nil)

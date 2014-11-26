@@ -20,10 +20,10 @@ type ProtoInitializerFunc func() proto.Message
 // ProtoHandlerFunc is the functional equivilent of the Respond() method for
 // the RequestHandler in the base tcpez.Server. Instead of taking the request and
 // sending the response as []byte, it has the request as an initialized and parsed
-// protobuf and returns the response in the protocol buffer schema that represents
+// protobuf and the response in the protocol buffer schema that represents
 // the response. This is then marshalled into a []byte before being sent back
 // to the client
-type ProtoHandlerFunc func(req proto.Message, res proto.Message, span *Span) proto.Message
+type ProtoHandlerFunc func(req proto.Message, res proto.Message, span *Span)
 
 type ProtoServer struct {
 	requestInitializer  ProtoInitializerFunc
@@ -49,7 +49,7 @@ func (s *ProtoServer) Respond(req []byte, span *Span) (res []byte, err error) {
 	span.Finish("pb.parse")
 	response := s.responsePool.Get().(proto.Message)
 	defer returnProtoToPool(s.responsePool, response)
-	response = s.handler(request, response, span)
+	s.handler(request, response, span)
 	span.Finish("pb.response")
 	span.Start("pb.encode")
 	res, err = proto.Marshal(response)
@@ -72,7 +72,7 @@ func (s *ProtoServer) Respond(req []byte, span *Span) (res []byte, err error) {
 // 		return new(Response)
 // 	})
 //
-// 	handlerFunc := tcpez.ProtoHandlerFunc(func(req proto.Message, res proto.Message, span *tcpez.Span) (res proto.Message) {
+// 	handlerFunc := tcpez.ProtoHandlerFunc(func(req proto.Message, res proto.Message, span *tcpez.Span) {
 //              // initialize a new Response object which will be returned at the end of the handler
 //              // We need to do a type assertion here which turns the proto.Message interface into
 //              // a struct of our request type that we've defined in our proto schema
