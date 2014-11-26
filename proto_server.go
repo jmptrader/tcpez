@@ -29,8 +29,8 @@ type ProtoServer struct {
 	requestInitializer  ProtoInitializerFunc
 	responseInitializer ProtoInitializerFunc
 	handler             ProtoHandlerFunc
-	requestPool         *sync.Pool
-	responsePool        *sync.Pool
+	requestPool         sync.Pool
+	responsePool        sync.Pool
 }
 
 // Respond() does not need to be called by any outside objects, it is the method
@@ -38,7 +38,8 @@ type ProtoServer struct {
 // ProtoInitializerFunc and ProtoHandlerFunc to handle the actual request after
 // marshalling and unmarshalling the request and response objects
 func (s *ProtoServer) Respond(req []byte, span *Span) (res []byte, err error) {
-	request := s.requestInitializer()
+	request := s.requestPool.Get().(proto.Message)
+	defer returnProtoToPool(s.requestPool, request)
 	span.Start("pb.parse")
 	err = proto.Unmarshal(req, request)
 	if err != nil {
@@ -46,7 +47,8 @@ func (s *ProtoServer) Respond(req []byte, span *Span) (res []byte, err error) {
 	}
 	span.Start("pb.response")
 	span.Finish("pb.parse")
-	response := s.responseInitializer()
+	response := s.responsePool.Get().(proto.Message)
+	defer returnProtoToPool(s.responsePool, response)
 	response = s.handler(request, response, span)
 	span.Finish("pb.response")
 	span.Start("pb.encode")
@@ -84,5 +86,20 @@ func (s *ProtoServer) Respond(req []byte, span *Span) (res []byte, err error) {
 // 	go server.Start()
 //
 func NewProtoServer(address string, requestInitializer ProtoInitializerFunc, responseInitializer ProtoInitializerFunc, handler ProtoHandlerFunc) (s *Server, err error) {
-	return NewServer(address, &ProtoServer{requestInitializer, responseInitializer, handler, nil, nil})
+	requestPool := sync.Pool{
+		New: func() interface{} {
+			return requestInitializer()
+		},
+	}
+	responsePool := sync.Pool{
+		New: func() interface{} {
+			return responseInitializer()
+		},
+	}
+	return NewServer(address, &ProtoServer{requestInitializer, responseInitializer, handler, requestPool, responsePool})
+}
+
+func returnProtoToPool(pool sync.Pool, p proto.Message) {
+	p.Reset()
+	pool.Put(p)
 }
