@@ -9,6 +9,7 @@ package tcpez
 
 import (
 	proto "code.google.com/p/goprotobuf/proto"
+	"sync"
 )
 
 // ProtoInitializerFunc defines the interface for the function that has to
@@ -26,7 +27,10 @@ type ProtoHandlerFunc func(req proto.Message, span *Span) proto.Message
 
 type ProtoServer struct {
 	requestInitializer ProtoInitializerFunc
+        responseInitializer ProtoInitializerFunc
 	handler            ProtoHandlerFunc
+	requestPool        *sync.Pool
+	responsePool       *sync.Pool
 }
 
 // Respond() does not need to be called by any outside objects, it is the method
@@ -53,15 +57,20 @@ func (s *ProtoServer) Respond(req []byte, span *Span) (res []byte, err error) {
 // NewProtoServer intializes a tcpez.Server with a ProtoInitializerFunc and a ProtoHandlerFunc. A normal tcpez.Server
 // is returned (meaning you still have to call .Start() on it)
 //
-// 	protoFunc := tcpez.ProtoInitializerFunc(func() proto.Message {
+// 	requestFunc := tcpez.ProtoInitializerFunc(func() proto.Message {
 // 	        // we call this Request here, but its whatever schema YOUR
 // 	        // request is in
 // 		return new(Request)
 // 	})
 //
-// 	handlerFunc := tcpez.ProtoHandlerFunc(func(req proto.Message, span *tcpez.Span) (res proto.Message) {
+// 	responseFunc := tcpez.ProtoInitializerFunc(func() proto.Message {
+// 	        // we call this Response here, but its whatever schema YOUR
+// 	        // request is in
+// 		return new(Response)
+// 	})
+//
+// 	handlerFunc := tcpez.ProtoHandlerFunc(func(req proto.Message, res proto.Message, span *tcpez.Span) (res proto.Message) {
 //              // initialize a new Response object which will be returned at the end of the handler
-// 		response := new(Response)
 //              // We need to do a type assertion here which turns the proto.Message interface into
 //              // a struct of our request type that we've defined in our proto schema
 // 		request := req.(*Request)
@@ -70,9 +79,9 @@ func (s *ProtoServer) Respond(req []byte, span *Span) (res []byte, err error) {
 // 		return response
 // 	})
 //      // Initialize the actual server
-// 	server := tcpez.NewProtoServer(":2222", protoFunc, handlerFunc)
+// 	server := tcpez.NewProtoServer(":2222", requestFunc, responseFunc, handlerFunc)
 // 	go server.Start()
 //
-func NewProtoServer(address string, requestInitializer ProtoInitializerFunc, handler ProtoHandlerFunc) (s *Server, err error) {
-	return NewServer(address, &ProtoServer{requestInitializer, handler})
+func NewProtoServer(address string, requestInitializer ProtoInitializerFunc, responseInitializer ProtoInitializerFunc, handler ProtoHandlerFunc) (s *Server, err error) {
+	return NewServer(address, &ProtoServer{requestInitializer, responseInitializer, handler})
 }
