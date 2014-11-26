@@ -23,14 +23,14 @@ type ProtoInitializerFunc func() proto.Message
 // protobuf and returns the response in the protocol buffer schema that represents
 // the response. This is then marshalled into a []byte before being sent back
 // to the client
-type ProtoHandlerFunc func(req proto.Message, span *Span) proto.Message
+type ProtoHandlerFunc func(req proto.Message, res proto.Message, span *Span) proto.Message
 
 type ProtoServer struct {
-	requestInitializer ProtoInitializerFunc
-        responseInitializer ProtoInitializerFunc
-	handler            ProtoHandlerFunc
-	requestPool        *sync.Pool
-	responsePool       *sync.Pool
+	requestInitializer  ProtoInitializerFunc
+	responseInitializer ProtoInitializerFunc
+	handler             ProtoHandlerFunc
+	requestPool         *sync.Pool
+	responsePool        *sync.Pool
 }
 
 // Respond() does not need to be called by any outside objects, it is the method
@@ -46,7 +46,8 @@ func (s *ProtoServer) Respond(req []byte, span *Span) (res []byte, err error) {
 	}
 	span.Start("pb.response")
 	span.Finish("pb.parse")
-	response := s.handler(request, span)
+	response := s.responseInitializer()
+	response = s.handler(request, response, span)
 	span.Finish("pb.response")
 	span.Start("pb.encode")
 	res, err = proto.Marshal(response)
@@ -83,5 +84,5 @@ func (s *ProtoServer) Respond(req []byte, span *Span) (res []byte, err error) {
 // 	go server.Start()
 //
 func NewProtoServer(address string, requestInitializer ProtoInitializerFunc, responseInitializer ProtoInitializerFunc, handler ProtoHandlerFunc) (s *Server, err error) {
-	return NewServer(address, &ProtoServer{requestInitializer, responseInitializer, handler})
+	return NewServer(address, &ProtoServer{requestInitializer, responseInitializer, handler, nil, nil})
 }

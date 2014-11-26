@@ -119,19 +119,22 @@ func TestEchoServerPipelined(t *testing.T) {
 
 func TestProtoServer(t *testing.T) {
 	addr := "127.0.0.1:2001"
-	protoFunc := ProtoInitializerFunc(func() proto.Message {
+	requestFunc := ProtoInitializerFunc(func() proto.Message {
 		return new(Request)
 	})
-	handlerFunc := ProtoHandlerFunc(func(req proto.Message, span *Span) (res proto.Message) {
+	responseFunc := ProtoInitializerFunc(func() proto.Message {
+		return new(Response)
+	})
+	handlerFunc := ProtoHandlerFunc(func(req proto.Message, res proto.Message, span *Span) proto.Message {
 		r := req.(*Request)
 		message := fmt.Sprintf("Got command: %s args: %s", r.GetCommand(), r.GetArgs())
 		span.Increment("response")
-		return &Response{
-			Status:  proto.String("OK"),
-			Message: proto.String(message),
-		}
+		response := res.(*Response)
+		response.Status = proto.String("OK")
+		response.Message = proto.String(message)
+		return res
 	})
-	l, _ := NewProtoServer(addr, protoFunc, handlerFunc)
+	l, _ := NewProtoServer(addr, requestFunc, responseFunc, handlerFunc)
 	assert.T(t, l != nil)
 	assert.Equal(t, addr, l.Address)
 	go l.Start()
