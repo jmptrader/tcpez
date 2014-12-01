@@ -26,11 +26,9 @@ type ProtoInitializerFunc func() proto.Message
 type ProtoHandlerFunc func(req proto.Message, res proto.Message, span *Span)
 
 type ProtoServer struct {
-	requestInitializer  ProtoInitializerFunc
-	responseInitializer ProtoInitializerFunc
-	handler             ProtoHandlerFunc
-	requestPool         sync.Pool
-	responsePool        sync.Pool
+	handler      ProtoHandlerFunc
+	requestPool  sync.Pool
+	responsePool sync.Pool
 }
 
 // Respond() does not need to be called by any outside objects, it is the method
@@ -96,7 +94,7 @@ func NewProtoServer(address string, requestInitializer ProtoInitializerFunc, res
 			return responseInitializer()
 		},
 	}
-	return NewServer(address, &ProtoServer{requestInitializer, responseInitializer, handler, requestPool, responsePool})
+	return NewServer(address, &ProtoServer{handler, requestPool, responsePool})
 }
 
 func returnProtoToPool(pool sync.Pool, p proto.Message) {
