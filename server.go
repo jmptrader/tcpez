@@ -214,7 +214,6 @@ func (s *Server) readHeaderAndHandleRequest(buf io.Reader) (header int32, respon
 		}
 		return int32(len(response)), response, nil
 	}
-	return
 }
 
 func (s *Server) sendResponse(w io.Writer, header int32, data []byte) (err error) {
