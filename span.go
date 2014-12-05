@@ -223,7 +223,7 @@ func (s *Span) JSON() string {
 		j[k] = fmt.Sprintf("%d", v)
 	}
 	for k, v := range s.SubSpans {
-		j[k] = fmt.Sprintf("%fms", v.MillisecondDuration())
+		j[k] = fmt.Sprintf("%f", v.MillisecondDuration())
 	}
 	b, _ := json.Marshal(j)
 	return string(b)
