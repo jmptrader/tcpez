@@ -9,27 +9,30 @@ package main
 import (
 	reqrep "./reqrep"
 	proto "code.google.com/p/goprotobuf/proto"
-	"flag"
 	"github.com/paperlesspost/tcpez"
 )
 
 // NewProtoServer wraps the tcpez.NewProtoServer defining the handler functions required for
 // setting up the server, It takes a tcp address to bind to and a StatsRecorder to stats to
 func NewProtoServer(address string, stats tcpez.StatsRecorder) *tcpez.Server {
-	// The ProtoInitializerFunc is invoked when turning the raw request on the line
+	// The requestFunc is invoked when turning the raw request on the line
 	// into the "Request" struct that you've defined for your application
-	protoFunc := tcpez.ProtoInitializerFunc(func() proto.Message {
+	requestFunc := tcpez.ProtoInitializerFunc(func() proto.Message {
 		return new(reqrep.Request)
+	})
+	// The responseFunc is invoked when turning the raw request on the line
+	// into the "Response" struct that you've defined for your application
+	responseFunc := tcpez.ProtoInitializerFunc(func() proto.Message {
+		return new(reqrep.Response)
 	})
 
 	// The ProtoHandlerFunc defines how to respond to a request object. tcpez takes care of the
 	// proto (un)marshalling as long as this func responsds with a proto.Message
-	handlerFunc := tcpez.ProtoHandlerFunc(func(req proto.Message, span *tcpez.Span) (res proto.Message) {
-		// initialize a new Response object which will be returned at the end of the handler
-		response := new(reqrep.Response)
+	handlerFunc := tcpez.ProtoHandlerFunc(func(req proto.Message, res proto.Message, span *tcpez.Span) {
 		// We need to do a type assertion here which turns the proto.Message interface into
 		// a struct of our request type that we've defined in our proto schema
 		request := req.(*reqrep.Request)
+		response := res.(*reqrep.Response)
 		// This is dumb logic, but your actual request handling logic would go here
 		if request.GetCommand() == "SUCCEED" {
 			response.Status = proto.String("OK")
@@ -38,10 +41,9 @@ func NewProtoServer(address string, stats tcpez.StatsRecorder) *tcpez.Server {
 			response.Status = proto.String("ERR")
 			response.Message = proto.String("Request Failed")
 		}
-		return response
 	})
 	// Initialize the actual server
-	server := tcpez.NewProtoServer(address, protoFunc, handlerFunc)
+	server, _ := tcpez.NewProtoServer(address, requestFunc, responseFunc, handlerFunc)
 	server.Stats = stats
 	return server
 }
