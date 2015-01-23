@@ -1,8 +1,9 @@
 // reqrep_client is an example of a client to a tcpez ProtoServer
 //
 // Usage
-//
-//      go run reqrep_client.go --logtostderr
+//      
+//      go run reqrep_server.go &
+//      go run reqrep_client.go
 //
 package main
 

@@ -2,7 +2,8 @@
 //
 // Usage
 //
-//      go run reqrep_server.go --logtostderr
+//      go run reqrep_server.go &
+//      go run reqrep_client.go
 //
 package main
 
