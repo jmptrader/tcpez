@@ -11,7 +11,7 @@ import (
 type StatsdStatsRecorder struct {
 	address   string
 	namespace string
-	client    *statsd.Client
+	client    statsd.Statter
 	counter   chan *StatsdStat
 	timer     chan *StatsdStat
 	gauge     chan *StatsdStat
@@ -25,7 +25,7 @@ type StatsdStat struct {
 // NewStatsdStatsRecorder accepts an address and a namespace as strings and returns a pointer
 // to an initialized Stat instance.
 func NewStatsdStatsRecorder(address, namespace string) *StatsdStatsRecorder {
-	client, err := statsd.Dial(address, namespace)
+	client, err := statsd.NewClient(address, namespace)
 
 	if err != nil {
 		return nil
