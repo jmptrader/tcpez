@@ -9,7 +9,7 @@ package main
 
 import (
 	reqrep "./reqrep"
-	proto "code.google.com/p/goprotobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/paperlesspost/tcpez"
 )
 

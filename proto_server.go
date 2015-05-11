@@ -8,7 +8,7 @@
 package tcpez
 
 import (
-	proto "code.google.com/p/goprotobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"sync"
 )
 
